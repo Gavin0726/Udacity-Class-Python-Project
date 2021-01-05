@@ -75,21 +75,89 @@ GET '/categories'
 GET ...
 POST ...
 DELETE ...
+```
+```
+
+
+GET '/questions'
+- Fetches all of questions by paginate
+- Request Arguments: page
+- Returns: questions, categories,current_category,total_questions
+{
+    'success':True,
+    'questions':{"answer": "Tom Cruise", "category": 5, "difficulty": 4, "id": 4, "question": "What actor did
+                author Anne Rice first denounce, then praise in the role of her beloved Lestat?"},
+    'categories':{'1' : "Science",'2' : "Art",'3' : "Geography",'4' : "History",'5' : "Entertainment",'6' : "Sports"},
+    'current_category':1,
+    'total_questions':1
+}
+
+DELETE '/questions/<int:question_id>'
+- Delete a question
+- Request Arguments: question_id
+- Returns: success,deleted question id
+{
+    'success':True,
+    "deletedid": 4 
+}
+
+POST '/questions/'
+Search questions:
+    - Search questions
+    - Request Arguments: searchTerm
+    - Returns: questions,
+    {
+        'success':True,
+        'questions':{"answer": "Tom Cruise", "category": 5, "difficulty": 4, "id": 4, "question": "What actor did
+                    author Anne Rice first denounce, then praise in the role of her beloved Lestat?"}
+        'totalquestions':1,
+        'currentCategory':1
+    }
+
+create a new question:
+    - Create a new question
+    - Request Arguments: question,answer,category,diffculty
+    - Returns: created quesiton id,
+    {
+            
+        'success':True,
+        'createdquesitonid':23,
+    }
+
+
+GET '/categories/<int:category_id>/questions'
+- Fetches questions based on category
+- Request Arguments: category_id
+- Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs. 
+ {  
+    'success':True,
+    'questions':{"answer": "Tom Cruise", "category": 5, "difficulty": 4, "id": 4, "question": "What actor did
+                    author Anne Rice first denounce, then praise in the role of her beloved Lestat?"}
+    'totalQuestions':1,
+    'currentCategory':5
+ }
 
 GET '/categories'
 - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: None
 - Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs. 
-{'1' : "Science",
-'2' : "Art",
-'3' : "Geography",
-'4' : "History",
-'5' : "Entertainment",
-'6' : "Sports"}
+ {
+    'success':True,
+    'categories':{'1' : "Science",'2' : "Art",'3' : "Geography",'4' : "History",'5' : "Entertainment",'6' : "Sports"}       
+ }
+
+
+POST '/quizzes'
+- Fetches questions to play the quiz
+- Request Arguments: previous_questions,quiz_category
+- Returns: question,
+{
+    'success':True,
+    'question':{"answer": "Tom Cruise", "category": 5, "difficulty": 4, "id": 4, "question": "What actor did
+                    author Anne Rice first denounce, then praise in the role of her beloved Lestat?"},
+}
 
 ```
-
-
 ## Testing
 To run the tests, run
 ```

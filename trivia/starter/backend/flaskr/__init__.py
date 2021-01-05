@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import random
 import json
 
@@ -15,13 +15,15 @@ def create_app(test_config=None):
   # create and configure the app
     app = Flask(__name__)
     setup_db(app)
-    cors = CORS(app, resources={r"/*": {"origins": "*"}})
+    cors = CORS(app)
+    app.config['CORS_HEADERS'] = 'Content-Type'
 
 
     @app.after_request
     def after_request(response):
         response.headers.add('Access-Control-Allow-Headers','Content-Type, Authorization')
         response.headers.add('Access-Control-Allow-Methods','GET, POST, PATCH, DELETE, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials','true')
         return response
     
     ''' 
@@ -96,7 +98,6 @@ def create_app(test_config=None):
     
     @TODO: 
     Create an endpoint to DELETE question using a question ID. 
-
     TEST: When you click the trash icon next to a question, the question will be removed.
     This removal will persist in the database and when you refresh the page. 
     '''
@@ -112,14 +113,13 @@ def create_app(test_config=None):
             
             question.delete()
 
-            selection = Question.query.order_by(Question.id).all()
-            current_questions = paginate_questions(request, selection)
+            # selection = Question.query.order_by(Question.id).all()
+            # current_questions = paginate_questions(request, selection)
 
             return jsonify({
                 'success':True,
-                'id':question.id,
-                'questions':current_questions,
-                'totalQuestions':len(Question.query.all())
+                'deletedid':question.id,
+               
             })
         except:
             abort(400)
@@ -128,13 +128,14 @@ def create_app(test_config=None):
     Create an endpoint to POST a new question, 
     which will require the question and answer text, 
     category, and difficulty score.
-
     TEST: When you submit a question on the "Add" tab, 
     the form will clear and the question will appear at the end of the last page
     of the questions list in the "List" tab.  
     '''
     @app.route('/questions', methods = ['POST'])
+    @cross_origin()
     def create_search_question():
+        
         body = request.get_json()
 
         new_question = body.get('question', None)
@@ -143,16 +144,16 @@ def create_app(test_config=None):
         new_category = body.get('category', None)
         search = body.get('searchTerm',None)
 
-    
+        
         try:
             if search:
                 selection = Question.query.order_by(Question.id).filter(Question.question.ilike('%{}%'.format(search))) 
                 current_questions = paginate_questions(request, selection)
-
+                print(len(current_questions))
                 return jsonify({
                     'success':True,
                     'questions': current_questions,
-                    'totalQuestions':len(Question.query.all()),
+                    'totalquestions':len(current_questions),
                     'currentCategory':1
                 })
 
@@ -160,14 +161,10 @@ def create_app(test_config=None):
                 question = Question(question=new_question, answer=new_answer,difficulty=new_difficulty,category=new_category)
                 question.insert()
 
-                selection = Question.query.order_by(Question.id).all()
-                current_questions = paginate_questions(request, selection)
-
+            
                 return jsonify({
                     'success':True,
-                    'id':question.id,
-                    'questions':current_questions,
-                    'totalQuestions':len(Question.query.all())
+                    'createdquesitonid':question.id,
                 })
 
         except:
@@ -178,7 +175,6 @@ def create_app(test_config=None):
     Create a POST endpoint to get questions based on a search term. 
     It should return any questions for whom the search term 
     is a substring of the question. 
-
     TEST: Search by any phrase. The questions list will update to include 
     only question that include that string within their question. 
     Try using the word "title" to start. 
@@ -187,7 +183,6 @@ def create_app(test_config=None):
     '''
     @TODO: 
     Create a GET endpoint to get questions based on category. 
-
     TEST: In the "List" tab / main screen, clicking on one of the 
     categories in the left column will cause only questions of that 
     category to be shown. 
@@ -230,9 +225,7 @@ def create_app(test_config=None):
         for cateitem in categories:
             cate.update({cateitem["id"]:cateitem["type"]})
         
-        # for cateitem in categories:
-        #     cate.append({cateitem["id"],cateitem["type"]})
-        # cate1=json.loads(cate)
+
         
         return jsonify({
             'success':True,
@@ -245,31 +238,51 @@ def create_app(test_config=None):
     This endpoint should take category and previous question parameters 
     and return a random questions within the given category, 
     if provided, and that is not one of the previous questions. 
-
     TEST: In the "Play" tab, after a user selects "All" or a category,
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not. 
     '''
-    @app.route('/quizzes')
+    @app.route('/quizzes' , methods = ['POST'])
+    @cross_origin()
     def retrieve_quiz():
-       
-        try:
-            selection = Question.query.filter(Question.category == category_id).all()
-            # selection = Question.query.order_by(Question.id).all()
 
+        body = request.get_json()
+
+        previous_questions = body.get('previous_questions', None)
+        quiz_category = body.get('quiz_category', None)
+        
+        try:
+            if quiz_category["id"] == 0:
+                selection = Question.query.all()
+            else:
+                selection = Question.query.filter(Question.category == quiz_category["id"]).all()
+            
             if selection is None:
                 abort(404)
-                        
+            
+            questionids=[]
         
-           
-            # selection = Question.query.order_by(Question.id).all()
-            current_questions = paginate_questions(request, selection)
+                        
+            questions = [question.format() for question in selection]
+            
+            for questionitem in questions:
+                if not questionitem["id"] in previous_questions:
+                    questionids.append(questionitem["id"])
+            
+            if not questionids:
+                quiz = False
+            else:
+                questionid = random.sample(questionids, 1)
+                
+                # selection = Question.query.order_by(Question.id).all()
+                question = Question.query.filter(Question.id == questionid[0]).all()
+                
+                quiz = question[0].format()
 
+            
             return jsonify({
                 'success':True,
-                'questions':current_questions,
-                'totalQuestions':len(Question.query.all()),
-                'currentCategory':category_id
+                'question':quiz,
             })
         except:
             abort(400)
@@ -310,7 +323,15 @@ def create_app(test_config=None):
             "message":"method not allowed"
         }), 405
 
+    @app.errorhandler(500)
+    def server_error(error):
+        return jsonify({
+            "success":False,
+            "error":500,
+            "message":"server error"
+        }), 500
 
     return app
+
 
     
