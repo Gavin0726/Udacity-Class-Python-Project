@@ -1,8 +1,8 @@
 from flask import Flask, request, abort
 import json
 from functools import wraps
-from jose import jwt
-from urllib.request import urlopen
+# from jose import jwt
+from six.moves.urllib.request import urlopen
 
 
 app = Flask(__name__)
@@ -52,7 +52,10 @@ def get_token_auth_header():
 
 
 def verify_decode_jwt(token):
-    jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
+    print("hello")
+    
+    jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+    print(jsonurl)
     jwks = json.loads(jsonurl.read())
     unverified_header = jwt.get_unverified_header(token)
     rsa_key = {}
